@@ -26,7 +26,7 @@ An interactive, browser-based Computer Networks simulator built with vanilla web
 ## 🚀 Live Demo
 
 You can view the live simulation directly in your browser:
-> **`https://<your-username>.github.io/<your-repo-name>/`**
+> **https://parv2606.github.io/NetSim/**
 
 *(Follow the deployment steps below to activate GitHub Pages on your repository).*
 
@@ -54,8 +54,8 @@ No node modules, backend server, or build steps required!
 
 1. Clone or download this repository:
    ```bash
-   git clone https://github.com/<your-username>/<your-repo-name>.git
-   cd <your-repo-name>
+   git clone https://github.com/Parv2606/NetSim.git
+   cd NetSim
    ```
 2. Open `index.html` in any modern web browser:
    - Double click `index.html`, or
