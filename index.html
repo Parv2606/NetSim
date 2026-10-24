@@ -1,0 +1,1762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetSim — Interactive Network Communication Simulator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Header & App Bar -->
+    <header class="app-header">
+        <div class="brand-wrapper">
+            <div class="brand-icon">⚡</div>
+            <div class="brand-titles">
+                <h1>NetSim</h1>
+                <p>Interactive Network Communication Simulator</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <div id="status-badge" class="status-badge ready">
+                <span class="dot"></span>
+                <span id="status-text">Ready</span>
+            </div>
+            <button id="btn-header-reset" class="btn btn-secondary btn-sm" title="Reset current simulation">
+                ↺ Reset
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="app-container">
+
+        <!-- Left Column: Configuration & Controls -->
+        <aside class="config-column">
+
+            <!-- Simulation Controls Card -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>🎮 Simulation Controls</h2>
+                </div>
+                <div class="card-body">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <button id="btn-start" class="btn btn-primary">
+                                ▶ Start
+                            </button>
+                            <button id="btn-pause" class="btn btn-secondary" disabled>
+                                ⏸ Pause
+                            </button>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <button id="btn-resume" class="btn btn-secondary" disabled>
+                                ⏵ Resume
+                            </button>
+                            <button id="btn-step" class="btn btn-secondary">
+                                ⏭ Step
+                            </button>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <button id="btn-find-route" class="btn btn-purple">
+                                🔍 Find Route
+                            </button>
+                            <button id="btn-reset" class="btn btn-secondary">
+                                ↺ Reset
+                            </button>
+                        </div>
+                        <button id="btn-traffic" class="btn btn-warning" style="margin-top: 4px;">
+                            💥 Generate Simultaneous Traffic
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Configuration Card -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>⚙️ Configuration Panel</h2>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="select-source">Source Device</label>
+                            <select id="select-source" class="form-control"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="select-dest">Destination Device</label>
+                            <select id="select-dest" class="form-control"></select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="select-mode">Simulation Mode</label>
+                        <select id="select-mode" class="form-control">
+                            <option value="complete" selected>Complete Simulation (Integrated)</option>
+                            <option value="tcp_only">TCP Three-Way Handshake Only</option>
+                            <option value="routing_only">Routing Path Visualization Only</option>
+                            <option value="collision_only">Collision Demonstration</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="input-total-packets">Total Data Packets (1-50)</label>
+                        <input type="number" id="input-total-packets" class="form-control" min="1" max="50" value="10">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="select-speed">Simulation Speed</label>
+                            <select id="select-speed" class="form-control">
+                                <option value="0.5">Slow (0.5x)</option>
+                                <option value="1.0" selected>Normal (1.0x)</option>
+                                <option value="2.0">Fast (2.0x)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="select-loss-prob">Packet Loss Prob.</label>
+                            <select id="select-loss-prob" class="form-control">
+                                <option value="0.0">0% (Reliable)</option>
+                                <option value="0.05" selected>5% (Low)</option>
+                                <option value="0.15">15% (Moderate)</option>
+                                <option value="0.30">30% (High Loss)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="select-collision-prob">Collision Probability</label>
+                        <select id="select-collision-prob" class="form-control">
+                            <option value="0.1">Low</option>
+                            <option value="0.3" selected>Medium</option>
+                            <option value="0.6">High</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+        </aside>
+
+        <!-- Center Column: Network Canvas & Protocol Visualizers -->
+        <section class="canvas-column">
+
+            <!-- Interactive Canvas Wrapper -->
+            <div class="canvas-wrapper">
+                <!-- Canvas Action Toolbar -->
+                <div class="canvas-toolbar">
+                    <div class="canvas-toolbar-group">
+                        <button id="btn-add-pc" class="btn btn-secondary btn-sm">+ Add PC</button>
+                        <button id="btn-add-router" class="btn btn-secondary btn-sm">+ Add Router</button>
+                        <button id="btn-add-switch" class="btn btn-secondary btn-sm">+ Add Switch</button>
+                        <button id="btn-connect-ptp" class="btn btn-secondary btn-sm">🔗 Connect (PtP)</button>
+                        <button id="btn-connect-shared" class="btn btn-secondary btn-sm">⚡ Connect (Shared)</button>
+                        <button id="btn-delete" class="btn btn-danger btn-sm">🗑 Delete Selected</button>
+                    </div>
+                    <div class="canvas-toolbar-group">
+                        <button id="btn-alt-route" class="btn btn-purple btn-sm" title="View alternative route if available">🔀 Alt Route</button>
+                        <button id="btn-load-default" class="btn btn-secondary btn-sm">↺ Load Example Network</button>
+                    </div>
+                </div>
+
+                <!-- HTML5 Network Canvas -->
+                <canvas id="network-canvas"></canvas>
+
+                <!-- Color Code Legend -->
+                <div class="canvas-legend">
+                    <div class="legend-item">
+                        <span class="legend-color blue"></span> Normal Packet
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color green"></span> Delivered / ACK
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color red"></span> Collision / Drop
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color orange"></span> Retransmission
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color purple"></span> Selected BFS Route
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color striped"></span> Shared Medium Channel
+                    </div>
+                </div>
+            </div>
+
+            <!-- TCP Three-Way Handshake Timeline Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>🤝 TCP Connection Timeline</h3>
+                    <span id="route-display-badge" style="font-size: 11px; font-weight: 600; color: var(--purple-route); font-family: monospace;">
+                        Route: PC1 → Switch1 → Router1 → Router2 → PC2
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="tcp-timeline">
+                        <div class="tcp-connector"></div>
+                        <div id="tcp-closed" class="tcp-step active">
+                            <div class="tcp-node-circle">1</div>
+                            <span class="tcp-label">CLOSED</span>
+                        </div>
+                        <div id="tcp-syn-sent" class="tcp-step">
+                            <div class="tcp-node-circle">2</div>
+                            <span class="tcp-label">SYN-SENT</span>
+                        </div>
+                        <div id="tcp-syn-recv" class="tcp-step">
+                            <div class="tcp-node-circle">3</div>
+                            <span class="tcp-label">SYN-RECEIVED</span>
+                        </div>
+                        <div id="tcp-established" class="tcp-step">
+                            <div class="tcp-node-circle">4</div>
+                            <span class="tcp-label">ESTABLISHED</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+        </section>
+
+        <!-- Right Column: Statistics Dashboard & Event Log -->
+        <aside class="stats-column">
+
+            <!-- Statistics Dashboard Card -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>📊 Live Metrics Dashboard</h2>
+                </div>
+                <div class="card-body">
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <span class="stat-label">Total Data Packets</span>
+                            <span id="stat-total-packets" class="stat-number">10</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Successfully Delivered</span>
+                            <span id="stat-delivered" class="stat-number highlight-green">0</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Packets Lost</span>
+                            <span id="stat-lost" class="stat-number highlight-red">0</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Collisions</span>
+                            <span id="stat-collisions" class="stat-number highlight-red">0</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Retransmissions</span>
+                            <span id="stat-retransmissions" class="stat-number highlight-orange">0</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">ACKs Received</span>
+                            <span id="stat-acks" class="stat-number highlight-blue">0</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Route Hop Count</span>
+                            <span id="stat-hops" class="stat-number">4</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Simulated Time</span>
+                            <span id="stat-time" class="stat-number">00:00.0</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Delivery Rate</span>
+                            <span id="stat-rate" class="stat-number highlight-green">0.0%</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Connection Status</span>
+                            <span id="stat-tcp-state" class="stat-number" style="font-size: 14px;">CLOSED</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Event Log Card -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>📜 Timestamped Event Log</h2>
+                    <button id="btn-clear-log" class="btn btn-secondary btn-sm">Clear</button>
+                </div>
+                <div class="card-body">
+                    <div id="event-log-container" class="log-container"></div>
+                </div>
+            </section>
+
+        </aside>
+
+    </main>
+
+    <!-- App Module Entry Point (For HTTP / HTTPS / Localhost) -->
+    <script type="module" src="script.js"></script>
+
+    <!-- Direct Browser Execution Fallback (Automatically activates if browser blocks ES modules on file:// protocol) -->
+    <script>
+    (function() {
+        function runFallbackIfBlocked() {
+            if (window.__netsim_initialized) return;
+            window.__netsim_initialized = true;
+
+            // Utilities
+            function generateId(prefix = 'id') {
+                return `${prefix}_${Math.random().toString(36).substr(2, 7)}_${Date.now().toString(36)}`;
+            }
+
+            function formatTime(seconds) {
+                if (isNaN(seconds) || seconds < 0) seconds = 0;
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                const minsStr = mins.toString().padStart(2, '0');
+                const secsStr = secs.toFixed(1).padStart(4, '0');
+                return `${minsStr}:${secsStr}`;
+            }
+
+            function clamp(value, min, max) {
+                return Math.max(min, Math.min(max, value));
+            }
+
+            function distance(p1, p2) {
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            function pointToSegmentDistance(p, a, b) {
+                const l2 = (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y);
+                if (l2 === 0) return distance(p, a);
+                let t = ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2;
+                t = Math.max(0, Math.min(1, t));
+                return distance(p, { x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y) });
+            }
+
+            function getDefaultTopology(canvasWidth = 850, canvasHeight = 380) {
+                const cx = canvasWidth / 2;
+                const cy = canvasHeight / 2;
+                const nodes = [
+                    { id: 'node_pc1', type: 'pc', name: 'PC1', ip: '192.168.1.10', mac: '00:1A:2B:3C:01:01', x: Math.round(cx - 280), y: Math.round(cy - 85) },
+                    { id: 'node_pc3', type: 'pc', name: 'PC3', ip: '192.168.1.11', mac: '00:1A:2B:3C:01:03', x: Math.round(cx - 280), y: Math.round(cy + 85) },
+                    { id: 'node_sw1', type: 'switch', name: 'Switch1', ip: '192.168.1.1', mac: '00:1A:2B:3C:AA:01', x: Math.round(cx - 130), y: Math.round(cy) },
+                    { id: 'node_r1', type: 'router', name: 'Router1', ip: '10.0.0.1', mac: '00:1A:2B:3C:BB:01', x: Math.round(cx - 10), y: Math.round(cy - 50) },
+                    { id: 'node_r2', type: 'router', name: 'Router2', ip: '10.0.1.1', mac: '00:1A:2B:3C:BB:02', x: Math.round(cx + 120), y: Math.round(cy + 35) },
+                    { id: 'node_pc2', type: 'pc', name: 'PC2', ip: '192.168.2.10', mac: '00:1A:2B:3C:02:02', x: Math.round(cx + 270), y: Math.round(cy) }
+                ];
+                const links = [
+                    { id: 'link_pc1_sw1', from: 'node_pc1', to: 'node_sw1', isShared: true, channelName: 'Shared Channel 1 (Hub/Bus segment)', bandwidth: '100 Mbps', delay: '2 ms' },
+                    { id: 'link_pc3_sw1', from: 'node_pc3', to: 'node_sw1', isShared: true, channelName: 'Shared Channel 1 (Hub/Bus segment)', bandwidth: '100 Mbps', delay: '2 ms' },
+                    { id: 'link_sw1_r1', from: 'node_sw1', to: 'node_r1', isShared: false, channelName: 'PtP Link SW1-R1', bandwidth: '1 Gbps', delay: '1 ms' },
+                    { id: 'link_r1_r2', from: 'node_r1', to: 'node_r2', isShared: false, channelName: 'PtP WAN Link R1-R2', bandwidth: '100 Mbps', delay: '5 ms' },
+                    { id: 'link_r2_pc2', from: 'node_r2', to: 'node_pc2', isShared: false, channelName: 'PtP Link R2-PC2', bandwidth: '1 Gbps', delay: '1 ms' }
+                ];
+                return { nodes, links };
+            }
+
+            function validateConfig(config) {
+                const errors = [];
+                if (!config.sourceId) errors.push('Please select a valid Source PC.');
+                if (!config.destId) errors.push('Please select a valid Destination PC.');
+                if (config.sourceId && config.destId && config.sourceId === config.destId) errors.push('Source and Destination devices must be different.');
+                if (config.totalPackets < 1 || config.totalPackets > 50) errors.push('Total Data Packets must be between 1 and 50.');
+                if (config.packetLossProb < 0 || config.packetLossProb > 0.3) errors.push('Packet Loss Probability must be between 0% and 30%.');
+                return { isValid: errors.length === 0, errors };
+            }
+
+            // Topology Class
+            class Topology {
+                constructor(canvas, options = {}) {
+                    this.canvas = canvas;
+                    this.ctx = canvas.getContext('2d');
+                    this.nodes = [];
+                    this.links = [];
+                    this.selectedNode = null;
+                    this.selectedLink = null;
+                    this.hoveredNode = null;
+                    this.draggedNode = null;
+                    this.dragOffset = { x: 0, y: 0 };
+                    this.mode = 'normal';
+                    this.connectStartNode = null;
+                    this.connectCurrentPos = null;
+                    this.isSharedConnect = false;
+                    this.highlightedRoute = null;
+                    this.collidingLinkIds = new Set();
+                    this.activePacketMarkers = [];
+                    this.onSelectionChanged = options.onSelectionChanged || (() => {});
+                    this.onTopologyChanged = options.onTopologyChanged || (() => {});
+                    this.isInitialized = false;
+                    this.initCanvasDPI();
+                    this.bindEvents();
+                    this.loadDefault();
+                    this.isInitialized = true;
+                }
+
+                initCanvasDPI() {
+                    const dpr = window.devicePixelRatio || 1;
+                    const rect = this.canvas.getBoundingClientRect();
+                    const displayWidth = rect.width || this.canvas.clientWidth || 800;
+                    const displayHeight = rect.height || this.canvas.clientHeight || 380;
+                    this.canvas.width = Math.round(displayWidth * dpr);
+                    this.canvas.height = Math.round(displayHeight * dpr);
+                    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                    this.width = displayWidth;
+                    this.height = displayHeight;
+                }
+
+                resize() {
+                    this.initCanvasDPI();
+                    this.render();
+                }
+
+                loadDefault() {
+                    const def = getDefaultTopology(this.width || 800, this.height || 500);
+                    this.nodes = def.nodes;
+                    this.links = def.links;
+                    this.selectedNode = null;
+                    this.selectedLink = null;
+                    this.highlightedRoute = null;
+                    this.collidingLinkIds.clear();
+                    if (this.isInitialized) {
+                        this.onTopologyChanged();
+                    }
+                    this.render();
+                }
+
+                bindEvents() {
+                    this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+                    this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+                    window.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+
+                    this.canvas.addEventListener('touchstart', (e) => {
+                        if (e.touches.length === 1) {
+                            const touch = e.touches[0];
+                            const rect = this.canvas.getBoundingClientRect();
+                            this.handleMouseDown({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => e.preventDefault() });
+                        }
+                    }, { passive: false });
+
+                    this.canvas.addEventListener('touchmove', (e) => {
+                        if (e.touches.length === 1) {
+                            const touch = e.touches[0];
+                            const rect = this.canvas.getBoundingClientRect();
+                            this.handleMouseMove({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => e.preventDefault() });
+                        }
+                    }, { passive: false });
+
+                    window.addEventListener('touchend', (e) => this.handleMouseUp(e));
+                }
+
+                getCanvasPos(e) {
+                    const rect = this.canvas.getBoundingClientRect();
+                    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+                }
+
+                getNodeAt(pos) {
+                    for (let i = this.nodes.length - 1; i >= 0; i--) {
+                        const node = this.nodes[i];
+                        if (distance(pos, { x: node.x, y: node.y }) <= 28) return node;
+                    }
+                    return null;
+                }
+
+                getLinkAt(pos) {
+                    const threshold = 8;
+                    for (const link of this.links) {
+                        const n1 = this.getNodeById(link.from);
+                        const n2 = this.getNodeById(link.to);
+                        if (n1 && n2) {
+                            if (pointToSegmentDistance(pos, { x: n1.x, y: n1.y }, { x: n2.x, y: n2.y }) <= threshold) return link;
+                        }
+                    }
+                    return null;
+                }
+
+                handleMouseDown(e) {
+                    const pos = this.getCanvasPos(e);
+                    const clickedNode = this.getNodeAt(pos);
+
+                    if (this.mode === 'connect') {
+                        if (clickedNode) {
+                            if (!this.connectStartNode) {
+                                this.connectStartNode = clickedNode;
+                                this.connectCurrentPos = pos;
+                            } else if (this.connectStartNode.id !== clickedNode.id) {
+                                this.addLink(this.connectStartNode.id, clickedNode.id, this.isSharedConnect);
+                                this.mode = 'normal';
+                                this.connectStartNode = null;
+                                this.connectCurrentPos = null;
+                            }
+                            this.render();
+                        } else {
+                            this.mode = 'normal';
+                            this.connectStartNode = null;
+                            this.connectCurrentPos = null;
+                            this.render();
+                        }
+                        return;
+                    }
+
+                    if (clickedNode) {
+                        this.selectedNode = clickedNode;
+                        this.selectedLink = null;
+                        this.draggedNode = clickedNode;
+                        this.dragOffset = { x: clickedNode.x - pos.x, y: clickedNode.y - pos.y };
+                        this.onSelectionChanged(this.selectedNode, 'node');
+                        this.render();
+                        return;
+                    }
+
+                    const clickedLink = this.getLinkAt(pos);
+                    if (clickedLink) {
+                        this.selectedLink = clickedLink;
+                        this.selectedNode = null;
+                        this.onSelectionChanged(this.selectedLink, 'link');
+                        this.render();
+                        return;
+                    }
+
+                    this.selectedNode = null;
+                    this.selectedLink = null;
+                    this.onSelectionChanged(null, null);
+                    this.render();
+                }
+
+                handleMouseMove(e) {
+                    const pos = this.getCanvasPos(e);
+                    if (this.mode === 'connect' && this.connectStartNode) {
+                        this.connectCurrentPos = pos;
+                        this.render();
+                        return;
+                    }
+                    if (this.draggedNode) {
+                        const padding = 35;
+                        this.draggedNode.x = Math.max(padding, Math.min(this.width - padding, pos.x + this.dragOffset.x));
+                        this.draggedNode.y = Math.max(padding, Math.min(this.height - padding, pos.y + this.dragOffset.y));
+                        this.render();
+                        return;
+                    }
+                    const hovered = this.getNodeAt(pos);
+                    if (hovered !== this.hoveredNode) {
+                        this.hoveredNode = hovered;
+                        this.canvas.style.cursor = hovered ? 'pointer' : 'default';
+                        this.render();
+                    }
+                }
+
+                handleMouseUp() {
+                    if (this.draggedNode) {
+                        this.draggedNode = null;
+                        this.onTopologyChanged();
+                    }
+                }
+
+                startConnectMode(isShared = false) {
+                    this.mode = 'connect';
+                    this.isSharedConnect = isShared;
+                    this.connectStartNode = null;
+                    this.connectCurrentPos = null;
+                    this.render();
+                }
+
+                addNode(type, x, y) {
+                    const existingCount = this.nodes.filter(n => n.type === type).length + 1;
+                    let prefix = 'PC', defaultIp = `192.168.1.${20 + existingCount}`;
+                    if (type === 'router') { prefix = 'Router'; defaultIp = `10.0.${existingCount}.1`; }
+                    else if (type === 'switch') { prefix = 'Switch'; defaultIp = `192.168.1.${existingCount}`; }
+
+                    const node = {
+                        id: generateId('node'),
+                        type,
+                        name: `${prefix}${existingCount}`,
+                        ip: defaultIp,
+                        mac: `00:1A:2B:3C:0${Math.min(9, existingCount)}:0${Math.min(9, existingCount)}`,
+                        x: x || (this.width / 2 + (Math.random() * 80 - 40)),
+                        y: y || (this.height / 2 + (Math.random() * 80 - 40))
+                    };
+                    this.nodes.push(node);
+                    this.selectedNode = node;
+                    this.selectedLink = null;
+                    this.onSelectionChanged(node, 'node');
+                    this.onTopologyChanged();
+                    this.render();
+                    return node;
+                }
+
+                addLink(fromId, toId, isShared = false) {
+                    if (fromId === toId) return null;
+                    const exists = this.links.some(l => (l.from === fromId && l.to === toId) || (l.from === toId && l.to === fromId));
+                    if (exists) return null;
+                    const fromNode = this.getNodeById(fromId);
+                    const toNode = this.getNodeById(toId);
+                    if (!fromNode || !toNode) return null;
+
+                    const link = {
+                        id: generateId('link'),
+                        from: fromId,
+                        to: toId,
+                        isShared: isShared,
+                        channelName: isShared ? 'Shared Channel (Collision Domain)' : `PtP Link ${fromNode.name}-${toNode.name}`,
+                        bandwidth: isShared ? '100 Mbps' : '1 Gbps',
+                        delay: '2 ms'
+                    };
+                    this.links.push(link);
+                    this.selectedLink = link;
+                    this.selectedNode = null;
+                    this.onSelectionChanged(link, 'link');
+                    this.onTopologyChanged();
+                    this.render();
+                    return link;
+                }
+
+                deleteSelected() {
+                    if (this.selectedNode) {
+                        const nodeId = this.selectedNode.id;
+                        this.links = this.links.filter(l => l.from !== nodeId && l.to !== nodeId);
+                        this.nodes = this.nodes.filter(n => n.id !== nodeId);
+                        this.selectedNode = null;
+                        this.highlightedRoute = null;
+                        this.onSelectionChanged(null, null);
+                        this.onTopologyChanged();
+                        this.render();
+                        return true;
+                    } else if (this.selectedLink) {
+                        this.links = this.links.filter(l => l.id !== this.selectedLink.id);
+                        this.selectedLink = null;
+                        this.highlightedRoute = null;
+                        this.onSelectionChanged(null, null);
+                        this.onTopologyChanged();
+                        this.render();
+                        return true;
+                    }
+                    return false;
+                }
+
+                getNodeById(id) { return this.nodes.find(n => n.id === id); }
+                getLinkById(id) { return this.links.find(l => l.id === id); }
+                getLinkBetween(id1, id2) {
+                    return this.links.find(l => (l.from === id1 && l.to === id2) || (l.from === id2 && l.to === id1));
+                }
+
+                findRouteBFS(sourceId, destId, excludedEdge = null) {
+                    if (!sourceId || !destId) return { success: false, reason: 'Invalid source or destination node.' };
+                    if (sourceId === destId) return { success: false, reason: 'Source and Destination cannot be the same device.' };
+                    const sourceNode = this.getNodeById(sourceId);
+                    const destNode = this.getNodeById(destId);
+                    if (!sourceNode || !destNode) return { success: false, reason: 'Source or Destination device does not exist.' };
+
+                    const adj = new Map();
+                    for (const node of this.nodes) adj.set(node.id, []);
+                    for (const link of this.links) {
+                        if (excludedEdge && ((link.from === excludedEdge.from && link.to === excludedEdge.to) || (link.from === excludedEdge.to && link.to === excludedEdge.from))) continue;
+                        if (adj.has(link.from) && adj.has(link.to)) {
+                            adj.get(link.from).push(link.to);
+                            adj.get(link.to).push(link.from);
+                        }
+                    }
+
+                    const queue = [[sourceId]];
+                    const visited = new Set([sourceId]);
+                    while (queue.length > 0) {
+                        const currentPath = queue.shift();
+                        const lastNodeId = currentPath[currentPath.length - 1];
+                        if (lastNodeId === destId) {
+                            const nodeObjects = currentPath.map(id => this.getNodeById(id));
+                            return {
+                                success: true,
+                                path: currentPath,
+                                nodeObjects,
+                                hops: currentPath.length - 1,
+                                description: nodeObjects.map(n => n.name).join(' → ')
+                            };
+                        }
+                        for (const neighborId of adj.get(lastNodeId) || []) {
+                            if (!visited.has(neighborId)) {
+                                visited.add(neighborId);
+                                queue.push([...currentPath, neighborId]);
+                            }
+                        }
+                    }
+                    return { success: false, reason: `No valid route between ${sourceNode.name} and ${destNode.name}.` };
+                }
+
+                findAlternativeRoutes(sourceId, destId) {
+                    const primary = this.findRouteBFS(sourceId, destId);
+                    if (!primary.success) return [];
+                    const altRoutes = [primary];
+                    for (let i = 0; i < primary.path.length - 1; i++) {
+                        const edge = { from: primary.path[i], to: primary.path[i + 1] };
+                        const alt = this.findRouteBFS(sourceId, destId, edge);
+                        if (alt.success) {
+                            if (!altRoutes.some(r => r.path.join('-') === alt.path.join('-'))) altRoutes.push(alt);
+                        }
+                    }
+                    return altRoutes;
+                }
+
+                setHighlightedRoute(routeNodeIds) { this.highlightedRoute = routeNodeIds; this.render(); }
+                clearHighlightedRoute() { this.highlightedRoute = null; this.render(); }
+                setCollidingLink(linkId, isColliding = true) {
+                    if (isColliding) this.collidingLinkIds.add(linkId);
+                    else this.collidingLinkIds.delete(linkId);
+                    this.render();
+                }
+                clearCollisions() { this.collidingLinkIds.clear(); this.render(); }
+                setPacketMarkers(markers) { this.activePacketMarkers = markers; }
+
+                render() {
+                    const ctx = this.ctx, width = this.width, height = this.height;
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, width, height);
+
+                    // Grid
+                    ctx.save();
+                    ctx.strokeStyle = '#F1F5F9';
+                    ctx.lineWidth = 1;
+                    for (let x = 0; x <= width; x += 24) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke(); }
+                    for (let y = 0; y <= height; y += 24) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
+                    ctx.restore();
+
+                    // Links
+                    for (const link of this.links) {
+                        const n1 = this.getNodeById(link.from), n2 = this.getNodeById(link.to);
+                        if (!n1 || !n2) continue;
+                        const isSelected = this.selectedLink && this.selectedLink.id === link.id;
+                        const isColliding = this.collidingLinkIds.has(link.id);
+
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.moveTo(n1.x, n1.y);
+                        ctx.lineTo(n2.x, n2.y);
+                        if (isColliding) {
+                            ctx.strokeStyle = '#DC2626'; ctx.lineWidth = 6; ctx.shadowColor = 'rgba(220, 38, 38, 0.6)'; ctx.shadowBlur = 12; ctx.stroke();
+                        } else if (isSelected) {
+                            ctx.strokeStyle = '#2563EB'; ctx.lineWidth = 4; ctx.shadowColor = 'rgba(37, 99, 235, 0.4)'; ctx.shadowBlur = 8; ctx.stroke();
+                        } else if (link.isShared) {
+                            ctx.strokeStyle = '#F59E0B'; ctx.lineWidth = 4; ctx.stroke();
+                            ctx.strokeStyle = '#D97706'; ctx.setLineDash([6, 5]); ctx.lineWidth = 1.8; ctx.stroke();
+                        } else {
+                            ctx.strokeStyle = '#94A3B8'; ctx.lineWidth = 2.5; ctx.stroke();
+                        }
+                        ctx.restore();
+
+                        if (link.isShared || isSelected || isColliding) {
+                            const midX = (n1.x + n2.x) / 2, midY = (n1.y + n2.y) / 2;
+                            ctx.save();
+                            ctx.font = '600 10px system-ui, sans-serif';
+                            const label = isColliding ? '⚡ COLLISION' : (link.isShared ? 'Shared Medium' : link.bandwidth);
+                            const boxW = ctx.measureText(label).width + 12, boxH = 18;
+                            ctx.fillStyle = isColliding ? '#FEE2E2' : (link.isShared ? '#FEF3C7' : '#EFF6FF');
+                            ctx.strokeStyle = isColliding ? '#DC2626' : (link.isShared ? '#D97706' : '#2563EB');
+                            ctx.lineWidth = 1;
+                            ctx.beginPath();
+                            if (ctx.roundRect) ctx.roundRect(midX - boxW / 2, midY - boxH / 2, boxW, boxH, 4);
+                            else ctx.rect(midX - boxW / 2, midY - boxH / 2, boxW, boxH);
+                            ctx.fill(); ctx.stroke();
+                            ctx.fillStyle = isColliding ? '#B91C1C' : (link.isShared ? '#B45309' : '#1D4ED8');
+                            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                            ctx.fillText(label, midX, midY);
+                            ctx.restore();
+                        }
+                    }
+
+                    // Route Highlight
+                    if (this.highlightedRoute && this.highlightedRoute.length >= 2) {
+                        ctx.save();
+                        ctx.strokeStyle = '#8B5CF6'; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                        ctx.shadowColor = 'rgba(139, 92, 246, 0.6)'; ctx.shadowBlur = 10;
+                        ctx.beginPath();
+                        for (let i = 0; i < this.highlightedRoute.length; i++) {
+                            const node = this.getNodeById(this.highlightedRoute[i]);
+                            if (!node) continue;
+                            if (i === 0) ctx.moveTo(node.x, node.y); else ctx.lineTo(node.x, node.y);
+                        }
+                        ctx.stroke();
+                        ctx.strokeStyle = '#C4B5FD'; ctx.lineWidth = 2; ctx.stroke();
+                        ctx.restore();
+                    }
+
+                    // Connect Line
+                    if (this.mode === 'connect' && this.connectStartNode && this.connectCurrentPos) {
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.moveTo(this.connectStartNode.x, this.connectStartNode.y);
+                        ctx.lineTo(this.connectCurrentPos.x, this.connectCurrentPos.y);
+                        ctx.strokeStyle = this.isSharedConnect ? '#F59E0B' : '#2563EB';
+                        ctx.lineWidth = 2.5; ctx.setLineDash([6, 4]); ctx.stroke();
+                        ctx.restore();
+                    }
+
+                    // Packets
+                    for (const pkt of this.activePacketMarkers) {
+                        ctx.save();
+                        ctx.translate(pkt.x, pkt.y);
+                        let fillColor = '#2563EB', strokeColor = '#1D4ED8', label = pkt.label || `P${pkt.seqNum || ''}`;
+                        if (pkt.status === 'COLLISION') { fillColor = '#DC2626'; strokeColor = '#991B1B'; label = '⚡ BOOM'; }
+                        else if (pkt.status === 'ACK') { fillColor = '#16A34A'; strokeColor = '#15803D'; label = pkt.label || `ACK ${pkt.ackNum || ''}`; }
+                        else if (pkt.status === 'RETRANSMIT') { fillColor = '#F59E0B'; strokeColor = '#B45309'; }
+                        else if (pkt.status === 'LOST') { fillColor = '#EF4444'; strokeColor = '#B91C1C'; label = '✕ LOST'; }
+
+                        ctx.shadowColor = fillColor; ctx.shadowBlur = 8;
+                        const width = Math.max(34, ctx.measureText(label).width + 12), height = 18;
+                        ctx.beginPath();
+                        if (ctx.roundRect) ctx.roundRect(-width / 2, -height / 2, width, height, 4);
+                        else ctx.rect(-width / 2, -height / 2, width, height);
+                        ctx.fillStyle = fillColor; ctx.fill();
+                        ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 1.5; ctx.stroke();
+                        ctx.shadowBlur = 0; ctx.font = 'bold 9.5px monospace'; ctx.fillStyle = '#FFFFFF';
+                        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillText(label, 0, 1);
+                        ctx.restore();
+                    }
+
+                    // Nodes
+                    for (const node of this.nodes) {
+                        const isSelected = this.selectedNode && this.selectedNode.id === node.id;
+                        const isInRoute = this.highlightedRoute && this.highlightedRoute.includes(node.id);
+                        ctx.save();
+                        if (isSelected) {
+                            ctx.beginPath(); ctx.arc(node.x, node.y, 32, 0, Math.PI * 2);
+                            ctx.fillStyle = 'rgba(37, 99, 235, 0.2)'; ctx.fill();
+                            ctx.strokeStyle = '#2563EB'; ctx.lineWidth = 2.5; ctx.stroke();
+                        } else if (isInRoute) {
+                            ctx.beginPath(); ctx.arc(node.x, node.y, 30, 0, Math.PI * 2);
+                            ctx.fillStyle = 'rgba(139, 92, 246, 0.15)'; ctx.fill();
+                            ctx.strokeStyle = '#8B5CF6'; ctx.lineWidth = 2; ctx.stroke();
+                        }
+
+                        const radius = 24;
+                        ctx.beginPath(); ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+                        let bgGradient = ctx.createLinearGradient(node.x - radius, node.y - radius, node.x + radius, node.y + radius);
+                        let strokeColor = '#2563EB';
+                        if (node.type === 'pc') { bgGradient.addColorStop(0, '#FFFFFF'); bgGradient.addColorStop(1, '#EFF6FF'); strokeColor = '#2563EB'; }
+                        else if (node.type === 'router') { bgGradient.addColorStop(0, '#FFFFFF'); bgGradient.addColorStop(1, '#F0FDF4'); strokeColor = '#16A34A'; }
+                        else if (node.type === 'switch') { bgGradient.addColorStop(0, '#FFFFFF'); bgGradient.addColorStop(1, '#FFFBEB'); strokeColor = '#D97706'; }
+
+                        ctx.fillStyle = bgGradient; ctx.shadowColor = 'rgba(0,0,0,0.08)'; ctx.shadowBlur = 4; ctx.shadowOffsetY = 2;
+                        ctx.fill(); ctx.strokeStyle = strokeColor; ctx.lineWidth = 2.2; ctx.stroke();
+                        ctx.restore();
+
+                        // Icon
+                        ctx.save();
+                        ctx.translate(node.x, node.y);
+                        if (node.type === 'pc') {
+                            ctx.fillStyle = '#2563EB'; ctx.fillRect(-12, -11, 24, 16);
+                            ctx.fillStyle = '#FFFFFF'; ctx.fillRect(-10, -9, 20, 12);
+                            ctx.fillStyle = '#2563EB'; ctx.fillRect(-3, 5, 6, 4); ctx.fillRect(-7, 9, 14, 2.5);
+                        } else if (node.type === 'router') {
+                            ctx.strokeStyle = '#16A34A'; ctx.lineWidth = 1.8;
+                            ctx.beginPath(); ctx.moveTo(-11, 0); ctx.lineTo(11, 0); ctx.moveTo(0, -11); ctx.lineTo(0, 11); ctx.stroke();
+                            ctx.beginPath();
+                            ctx.moveTo(8, -3); ctx.lineTo(12, 0); ctx.lineTo(8, 3);
+                            ctx.moveTo(-8, -3); ctx.lineTo(-12, 0); ctx.lineTo(-8, 3);
+                            ctx.moveTo(-3, -8); ctx.lineTo(0, -12); ctx.lineTo(3, -8);
+                            ctx.moveTo(-3, 8); ctx.lineTo(0, 12); ctx.lineTo(3, 8);
+                            ctx.stroke();
+                        } else if (node.type === 'switch') {
+                            ctx.strokeStyle = '#D97706'; ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            ctx.moveTo(-10, -4); ctx.lineTo(10, -4); ctx.moveTo(7, -7); ctx.lineTo(10, -4); ctx.lineTo(7, -1);
+                            ctx.moveTo(10, 4); ctx.lineTo(-10, 4); ctx.moveTo(-7, 1); ctx.lineTo(-10, 4); ctx.lineTo(-7, 7);
+                            ctx.stroke();
+                        }
+                        ctx.restore();
+
+                        // Labels
+                        ctx.save();
+                        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+                        ctx.font = 'bold 12px system-ui, sans-serif'; ctx.fillStyle = '#172033';
+                        ctx.fillText(node.name, node.x, node.y + radius + 7);
+                        ctx.font = '10px monospace'; ctx.fillStyle = '#64748B';
+                        ctx.fillText(node.ip, node.x, node.y + radius + 22);
+                        ctx.restore();
+                    }
+
+                    if (this.mode === 'connect') {
+                        ctx.save();
+                        ctx.fillStyle = 'rgba(37, 99, 235, 0.9)'; ctx.fillRect(15, 15, 290, 36);
+                        ctx.fillStyle = '#FFFFFF'; ctx.font = '600 13px system-ui, sans-serif';
+                        ctx.fillText(this.connectStartNode ? `Click target device to connect ${this.isSharedConnect ? '(Shared)' : '(PtP)'}` : 'Click starting device to connect...', 25, 38);
+                        ctx.restore();
+                    }
+                }
+            }
+
+            // Simulation Class
+            const SIM_STATUS = { READY: 'Ready', RUNNING: 'Running', PAUSED: 'Paused', COMPLETED: 'Completed', FAILED: 'Failed' };
+            const TCP_STATE = { CLOSED: 'CLOSED', SYN_SENT: 'SYN-SENT', SYN_RECEIVED: 'SYN-RECEIVED', ESTABLISHED: 'ESTABLISHED' };
+
+            class Simulation {
+                constructor(topology, options = {}) {
+                    this.topology = topology;
+                    this.onLog = options.onLog || (() => {});
+                    this.onStatsUpdate = options.onStatsUpdate || (() => {});
+                    this.onStateChange = options.onStateChange || (() => {});
+                    this.onWindowUpdate = options.onWindowUpdate || (() => {});
+                    this.onTcpStateChange = options.onTcpStateChange || (() => {});
+
+                    this.config = {
+                        sourceId: 'node_pc1', destId: 'node_pc2', totalPackets: 10, windowSize: 4,
+                        speed: 1.0, collisionProb: 0.3, packetLossProb: 0.05, mode: 'complete'
+                    };
+
+                    this.status = SIM_STATUS.READY;
+                    this.simTime = 0.0;
+                    this.lastFrameTime = 0;
+                    this.animFrameId = null;
+
+                    this.stats = {
+                        totalPackets: 10, deliveredPackets: 0, lostPackets: 0, collisions: 0, retransmissions: 0,
+                        acksReceived: 0, hopCount: 0, simTime: 0, deliveryPercentage: '0.0%',
+                        tcpState: TCP_STATE.CLOSED, status: SIM_STATUS.READY
+                    };
+
+                    this.inFlightPackets = [];
+                    this.dataTx = {
+                        currentSeq: 1, totalPackets: 10, isAwaitingAck: false, timeoutExpiresAt: 0,
+                        timeoutDuration: 5.0, packetRetries: new Map(), maxRetries: 6
+                    };
+                    this.channelOccupancy = new Map();
+                    this.nextCrossTrafficTime = 2.5;
+
+                    this.initAnimationLoop();
+                }
+
+                updateConfig(newConfig) {
+                    Object.assign(this.config, newConfig);
+                    this.dataTx.totalPackets = this.config.totalPackets;
+                    this.stats.totalPackets = this.config.totalPackets;
+                    this.onStatsUpdate(this.stats);
+                }
+
+                initAnimationLoop() {
+                    const loop = (timestamp) => {
+                        if (!this.lastFrameTime) this.lastFrameTime = timestamp;
+                        const deltaRealMs = timestamp - this.lastFrameTime;
+                        this.lastFrameTime = timestamp;
+
+                        if (this.status === SIM_STATUS.RUNNING) {
+                            const deltaSimSec = (deltaRealMs / 1000) * this.config.speed;
+                            this.tick(deltaSimSec);
+                        }
+
+                        this.updatePacketPositions();
+                        this.topology.setPacketMarkers(this.inFlightPackets);
+                        this.topology.render();
+                        this.animFrameId = requestAnimationFrame(loop);
+                    };
+                    this.animFrameId = requestAnimationFrame(loop);
+                }
+
+                tick(dt) {
+                    this.simTime += dt;
+                    this.stats.simTime = this.simTime;
+
+                    for (let i = this.inFlightPackets.length - 1; i >= 0; i--) {
+                        const pkt = this.inFlightPackets[i];
+                        if (pkt.isPaused) continue;
+
+                        const isControl = (pkt.type === 'SYN' || pkt.type === 'SYN-ACK' || pkt.type === 'ACK');
+                        const hopSpeed = (isControl ? 2.0 : 1.3) * this.config.speed;
+
+                        pkt.progress += hopSpeed * dt;
+                        this.checkSharedMediumCollision(pkt);
+
+                        if (pkt.status === 'LOST' && pkt.progress >= 0.5) {
+                            this.inFlightPackets.splice(i, 1);
+                            this.releaseChannelOccupancy(pkt);
+                            if (pkt.onDrop) pkt.onDrop(pkt);
+                            continue;
+                        }
+                        if (pkt.status === 'COLLISION' && pkt.progress >= 0.6) {
+                            this.inFlightPackets.splice(i, 1);
+                            this.releaseChannelOccupancy(pkt);
+                            if (pkt.onCollision) pkt.onCollision(pkt);
+                            continue;
+                        }
+
+                        if (pkt.progress >= 1.0) {
+                            this.releaseChannelOccupancy(pkt);
+                            pkt.hopIndex++;
+                            pkt.progress = 0;
+                            if (pkt.hopIndex >= pkt.path.length - 1) {
+                                this.inFlightPackets.splice(i, 1);
+                                if (pkt.onArrival) pkt.onArrival(pkt);
+                            } else {
+                                this.registerChannelOccupancy(pkt);
+                            }
+                        }
+                    }
+
+                    if (this.config.mode === 'complete' && this.stats.tcpState === TCP_STATE.ESTABLISHED) {
+                        this.tickDataTransmission(dt);
+                    }
+                    this.updateStats();
+                }
+
+                updatePacketPositions() {
+                    for (const pkt of this.inFlightPackets) {
+                        if (!pkt.path || pkt.path.length < 2) continue;
+                        const n1 = this.topology.getNodeById(pkt.path[pkt.hopIndex]);
+                        const n2 = this.topology.getNodeById(pkt.path[pkt.hopIndex + 1]);
+                        if (n1 && n2) {
+                            const t = clamp(pkt.progress, 0, 1);
+                            pkt.x = n1.x + t * (n2.x - n1.x);
+                            pkt.y = n1.y + t * (n2.y - n1.y);
+                        }
+                    }
+                }
+
+                registerChannelOccupancy(pkt) {
+                    if (!pkt.path || pkt.hopIndex >= pkt.path.length - 1) return;
+                    const link = this.topology.getLinkBetween(pkt.path[pkt.hopIndex], pkt.path[pkt.hopIndex + 1]);
+                    if (link && link.isShared) {
+                        const channelKey = link.channelName || link.id;
+                        pkt.currentChannelKey = channelKey;
+                        pkt.currentLinkId = link.id;
+                        if (!this.channelOccupancy.has(channelKey)) this.channelOccupancy.set(channelKey, new Set());
+                        this.channelOccupancy.get(channelKey).add(pkt.id);
+                    } else {
+                        pkt.currentChannelKey = null;
+                        pkt.currentLinkId = null;
+                    }
+                }
+
+                releaseChannelOccupancy(pkt) {
+                    if (pkt.currentChannelKey && this.channelOccupancy.has(pkt.currentChannelKey)) {
+                        const set = this.channelOccupancy.get(pkt.currentChannelKey);
+                        set.delete(pkt.id);
+                        if (set.size === 0) {
+                            if (pkt.currentLinkId) {
+                                this.topology.setCollidingLink(pkt.currentLinkId, false);
+                            }
+                        }
+                    }
+                    pkt.currentChannelKey = null;
+                    pkt.currentLinkId = null;
+                }
+
+                checkSharedMediumCollision(pkt) {
+                    if (!pkt.currentChannelKey || pkt.status === 'COLLISION') return;
+                    if (pkt.type !== 'DATA') return;
+                    const occupants = this.channelOccupancy.get(pkt.currentChannelKey);
+                    if (!occupants || occupants.size <= 1) return;
+
+                    const activePackets = Array.from(occupants)
+                        .map(pid => this.inFlightPackets.find(p => p.id === pid))
+                        .filter(p => p && p.type === 'DATA');
+
+                    const distinctSenders = new Set(activePackets.map(p => p.sourceId || p.path[0]));
+
+                    if (distinctSenders.size > 1) {
+                        this.stats.collisions++;
+                        if (pkt.currentLinkId) {
+                            this.topology.setCollidingLink(pkt.currentLinkId, true);
+                        }
+                        for (const other of activePackets) {
+                            if (other.status !== 'COLLISION') {
+                                other.status = 'COLLISION';
+                                other.label = '⚡ COLLISION';
+                            }
+                        }
+                        const senderNames = Array.from(distinctSenders).map(id => this.topology.getNodeById(id)?.name || id).join(' and ');
+                        this.log(`COLLISION detected on ${pkt.currentChannelKey}! Transmissions overlapped between ${senderNames}.`, 'collision');
+                    }
+                }
+
+                start() {
+                    if (this.status === SIM_STATUS.RUNNING) return;
+                    const routeResult = this.topology.findRouteBFS(this.config.sourceId, this.config.destId);
+                    if (!routeResult.success) {
+                        this.status = SIM_STATUS.FAILED;
+                        this.log(`[${formatTime(this.simTime)}] Error: ${routeResult.reason}`, 'error');
+                        this.onStateChange(this.status);
+                        return;
+                    }
+                    this.status = SIM_STATUS.RUNNING;
+                    this.activeRoute = routeResult;
+                    this.stats.hopCount = routeResult.hops;
+                    this.topology.setHighlightedRoute(routeResult.path);
+                    this.log(`[${formatTime(this.simTime)}] Simulation started. Mode: ${this.getModeName()}.`, 'info');
+                    this.log(`[${formatTime(this.simTime)}] Route discovered (${routeResult.hops} hops): ${routeResult.description}`, 'info');
+                    this.onStateChange(this.status);
+
+                    switch (this.config.mode) {
+                        case 'complete': this.executeCompleteSimulation(); break;
+                        case 'tcp_only': this.executeTcpHandshake(); break;
+                        case 'routing_only': this.executeRoutingDemo(); break;
+                        case 'collision_only': this.executeCollisionDemo(); break;
+                        default: this.executeCompleteSimulation();
+                    }
+                }
+
+                pause() {
+                    if (this.status !== SIM_STATUS.RUNNING) return;
+                    this.status = SIM_STATUS.PAUSED;
+                    this.log(`[${formatTime(this.simTime)}] Simulation paused.`, 'warning');
+                    this.onStateChange(this.status);
+                }
+
+                resume() {
+                    if (this.status !== SIM_STATUS.PAUSED) return;
+                    this.status = SIM_STATUS.RUNNING;
+                    this.lastFrameTime = performance.now();
+                    this.log(`[${formatTime(this.simTime)}] Simulation resumed.`, 'info');
+                    this.onStateChange(this.status);
+                }
+
+                step() {
+                    if (this.status === SIM_STATUS.COMPLETED || this.status === SIM_STATUS.FAILED) return;
+                    this.status = SIM_STATUS.RUNNING;
+                    this.tick(0.25);
+                    this.status = SIM_STATUS.PAUSED;
+                    this.onStateChange(this.status);
+                    this.log(`[${formatTime(this.simTime)}] Stepped forward by 0.25s.`, 'info');
+                }
+
+                reset() {
+                    this.status = SIM_STATUS.READY;
+                    this.simTime = 0.0;
+                    this.inFlightPackets = [];
+                    this.channelOccupancy.clear();
+                    this.topology.clearHighlightedRoute();
+                    this.topology.clearCollisions();
+                    this.topology.setPacketMarkers([]);
+                    this.dataTx = {
+                        currentSeq: 1, totalPackets: this.config.totalPackets, isAwaitingAck: false, timeoutExpiresAt: 0,
+                        timeoutDuration: 5.0, packetRetries: new Map(), maxRetries: 6
+                    };
+                    this.nextCrossTrafficTime = 2.5;
+                    this.stats = {
+                        totalPackets: this.config.totalPackets, deliveredPackets: 0, lostPackets: 0, collisions: 0,
+                        retransmissions: 0, acksReceived: 0, hopCount: this.activeRoute ? this.activeRoute.hops : 0,
+                        simTime: 0, deliveryPercentage: '0.0%', tcpState: TCP_STATE.CLOSED, status: SIM_STATUS.READY
+                    };
+                    this.onTcpStateChange(TCP_STATE.CLOSED);
+                    if (this.onWindowUpdate) this.onWindowUpdate(null, null);
+                    this.onStatsUpdate(this.stats);
+                    this.onStateChange(this.status);
+                    this.log(`[00:00.0] Simulation reset to initial state.`, 'info');
+                    this.topology.render();
+                }
+
+                executeTcpHandshake(onEstablished = null) {
+                    const srcNode = this.topology.getNodeById(this.config.sourceId);
+                    const dstNode = this.topology.getNodeById(this.config.destId);
+                    this.updateTcpState(TCP_STATE.CLOSED);
+                    this.log(`[${formatTime(this.simTime)}] [TCP Handshake] ${srcNode.name} initiating connection to ${dstNode.name}...`, 'info');
+                    this.updateTcpState(TCP_STATE.SYN_SENT);
+                    this.log(`[${formatTime(this.simTime)}] [TCP] ${srcNode.name} sent SYN packet.`, 'info');
+
+                    const syn = this.createPacket({
+                        type: 'SYN', label: 'SYN', path: [...this.activeRoute.path], status: 'IN_FLIGHT',
+                        onArrival: () => {
+                            this.updateTcpState(TCP_STATE.SYN_RECEIVED);
+                            this.log(`[${formatTime(this.simTime)}] [TCP] ${dstNode.name} received SYN, sending SYN-ACK.`, 'info');
+                            const synAck = this.createPacket({
+                                type: 'SYN-ACK', label: 'SYN-ACK', path: [...this.activeRoute.path].reverse(), status: 'ACK',
+                                onArrival: () => {
+                                    this.log(`[${formatTime(this.simTime)}] [TCP] ${srcNode.name} received SYN-ACK, sending final ACK.`, 'info');
+                                    const ack = this.createPacket({
+                                        type: 'ACK', label: 'ACK', path: [...this.activeRoute.path], status: 'IN_FLIGHT',
+                                        onArrival: () => {
+                                            this.updateTcpState(TCP_STATE.ESTABLISHED);
+                                            this.log(`[${formatTime(this.simTime)}] [TCP] Connection ESTABLISHED successfully!`, 'success');
+                                            if (this.config.mode === 'tcp_only') this.completeSimulation();
+                                            else if (onEstablished) onEstablished();
+                                        }
+                                    });
+                                    this.transmitPacket(ack);
+                                }
+                            });
+                            this.transmitPacket(synAck);
+                        }
+                    });
+                    this.transmitPacket(syn);
+                }
+
+                executeCompleteSimulation() {
+                    this.initDataTx();
+                    this.executeTcpHandshake(() => {
+                        this.log(`[${formatTime(this.simTime)}] Beginning Data Packet Transmission across established route.`, 'info');
+                        this.sendNextDataPacket();
+                    });
+                }
+
+                initDataTx() {
+                    this.dataTx.currentSeq = 1;
+                    this.dataTx.totalPackets = this.config.totalPackets;
+                    this.dataTx.isAwaitingAck = false;
+                    this.dataTx.timeoutExpiresAt = 0;
+                    this.dataTx.packetRetries.clear();
+                }
+
+                tickDataTransmission(dt) {
+                    if (this.config.collisionProb > 0 && this.simTime >= this.nextCrossTrafficTime) {
+                        this.nextCrossTrafficTime = this.simTime + (5.0 / (this.config.collisionProb * 1.5));
+                        if (Math.random() < this.config.collisionProb) this.triggerBackgroundSharedTraffic();
+                    }
+
+                    if (this.dataTx.isAwaitingAck && this.dataTx.timeoutExpiresAt > 0 && this.simTime >= this.dataTx.timeoutExpiresAt) {
+                        this.handleDataTimeout();
+                    }
+
+                    if (this.dataTx.currentSeq > this.dataTx.totalPackets && this.inFlightPackets.length === 0) {
+                        this.completeSimulation();
+                    }
+                }
+
+                triggerBackgroundSharedTraffic() {
+                    const sharedLink = this.topology.links.find(l => l.isShared);
+                    const pc3 = this.topology.getNodeById('node_pc3');
+                    const sw1 = this.topology.getNodeById('node_sw1');
+                    if (!sharedLink || !pc3 || !sw1) return;
+                    const crossPkt = this.createPacket({
+                        type: 'DATA', label: 'PC3-Bg', path: ['node_pc3', 'node_sw1'], status: 'IN_FLIGHT',
+                        onCollision: () => {
+                            this.log(`[${formatTime(this.simTime)}] Cross-traffic packet collided on ${sharedLink.channelName}! Backing off...`, 'collision');
+                        }
+                    });
+                    this.transmitPacket(crossPkt);
+                }
+
+                sendNextDataPacket(isRetransmit = false) {
+                    if (this.status !== SIM_STATUS.RUNNING) return;
+                    const seqNum = this.dataTx.currentSeq;
+                    if (seqNum > this.dataTx.totalPackets) return;
+
+                    const currentRetries = (this.dataTx.packetRetries.get(seqNum) || 0) + (isRetransmit ? 1 : 0);
+                    this.dataTx.packetRetries.set(seqNum, currentRetries);
+
+                    if (currentRetries > this.dataTx.maxRetries) {
+                        this.status = SIM_STATUS.FAILED;
+                        this.log(`[${formatTime(this.simTime)}] Transmission failed: Packet P${seqNum} exceeded maximum retry limit (${this.dataTx.maxRetries}).`, 'error');
+                        this.onStateChange(this.status);
+                        return;
+                    }
+
+                    this.dataTx.isAwaitingAck = true;
+                    this.dataTx.timeoutExpiresAt = this.simTime + this.dataTx.timeoutDuration;
+
+                    if (isRetransmit) {
+                        this.stats.retransmissions++;
+                        this.log(`[${formatTime(this.simTime)}] Retransmitting Packet P${seqNum} (Attempt ${currentRetries}).`, 'warning');
+                    } else {
+                        this.log(`[${formatTime(this.simTime)}] Transmitting Data Packet P${seqNum} of ${this.dataTx.totalPackets}.`, 'info');
+                    }
+
+                    const willDrop = Math.random() < this.config.packetLossProb;
+                    const packet = this.createPacket({
+                        seqNum, type: 'DATA', label: `P${seqNum}`, path: [...this.activeRoute.path],
+                        status: isRetransmit ? 'RETRANSMIT' : 'IN_FLIGHT', isRetransmit,
+                        onArrival: () => this.handleReceiverDataArrival(seqNum),
+                        onDrop: () => {
+                            this.stats.lostPackets++;
+                            this.log(`[${formatTime(this.simTime)}] Packet P${seqNum} dropped due to simulated channel loss!`, 'error');
+                        },
+                        onCollision: () => this.scheduleBackoffRetry(seqNum)
+                    });
+
+                    if (willDrop) packet.status = 'LOST';
+                    this.transmitPacket(packet);
+                }
+
+                handleReceiverDataArrival(seqNum) {
+                    this.stats.deliveredPackets++;
+                    this.log(`[${formatTime(this.simTime)}] Destination received Packet P${seqNum} successfully. Sending ACK ${seqNum}.`, 'success');
+                    this.sendAck(seqNum);
+                }
+
+                sendAck(ackNum) {
+                    const ackPacket = this.createPacket({
+                        ackNum, type: 'ACK', label: `ACK ${ackNum}`, path: [...this.activeRoute.path].reverse(), status: 'ACK',
+                        onArrival: () => this.handleAckArrival(ackNum)
+                    });
+                    this.transmitPacket(ackPacket);
+                }
+
+                handleAckArrival(ackNum) {
+                    this.stats.acksReceived++;
+                    this.log(`[${formatTime(this.simTime)}] Sender received ACK ${ackNum}. Delivery of Packet P${ackNum} confirmed.`, 'success');
+                    this.dataTx.isAwaitingAck = false;
+                    this.dataTx.timeoutExpiresAt = 0;
+                    this.dataTx.currentSeq++;
+
+                    if (this.dataTx.currentSeq <= this.dataTx.totalPackets) {
+                        setTimeout(() => {
+                            if (this.status === SIM_STATUS.RUNNING) this.sendNextDataPacket();
+                        }, 300 / this.config.speed);
+                    } else {
+                        setTimeout(() => {
+                            if (this.status === SIM_STATUS.RUNNING && this.inFlightPackets.length === 0) {
+                                this.completeSimulation();
+                            }
+                        }, 350 / this.config.speed);
+                    }
+                }
+
+                handleDataTimeout() {
+                    const seqNum = this.dataTx.currentSeq;
+                    this.log(`[${formatTime(this.simTime)}] [TIMEOUT] ACK timer expired for Packet P${seqNum}! Retransmitting...`, 'error');
+                    this.dataTx.timeoutExpiresAt = this.simTime + this.dataTx.timeoutDuration;
+                    this.sendNextDataPacket(true);
+                }
+
+                scheduleBackoffRetry(seqNum) {
+                    const backoffDelay = (0.5 + Math.random() * 0.8);
+                    this.log(`[${formatTime(this.simTime)}] Collision encountered. Scheduling retry for Packet P${seqNum} after ${backoffDelay.toFixed(2)}s backoff delay.`, 'warning');
+                    setTimeout(() => {
+                        if (this.status === SIM_STATUS.RUNNING && seqNum === this.dataTx.currentSeq) {
+                            this.sendNextDataPacket(true);
+                        }
+                    }, (backoffDelay * 1000) / this.config.speed);
+                }
+
+                executeCollisionDemo() {
+                    this.log(`[${formatTime(this.simTime)}] Running Shared-Medium Collision Demonstration...`, 'info');
+                    this.generateSimultaneousTraffic();
+                }
+
+                generateSimultaneousTraffic() {
+                    const sharedLink = this.topology.links.find(l => l.isShared);
+                    if (!sharedLink) {
+                        this.log(`[${formatTime(this.simTime)}] No shared medium link exists in current topology. Please connect devices with a Shared Channel.`, 'warning');
+                        alert('No shared medium channel exists in the current network. Click "+ Connect (Shared)" or load the default network.');
+                        return;
+                    }
+
+                    let pc1 = this.topology.getNodeById('node_pc1');
+                    let pc3 = this.topology.getNodeById('node_pc3');
+                    let sw1 = this.topology.getNodeById('node_sw1');
+                    if (!pc1 || !pc3 || !sw1) {
+                        pc1 = this.topology.getNodeById(sharedLink.from);
+                        pc3 = this.topology.getNodeById(sharedLink.to);
+                        sw1 = pc3;
+                    }
+
+                    if (this.status !== SIM_STATUS.RUNNING) {
+                        this.status = SIM_STATUS.RUNNING;
+                        this.lastFrameTime = performance.now();
+                        this.onStateChange(this.status);
+                    }
+
+                    this.log(`[${formatTime(this.simTime)}] ${pc1.name} and ${pc3.name} transmitting simultaneously on Shared Channel 1...`, 'warning');
+
+                    const p1 = this.createPacket({
+                        type: 'DATA', label: 'PC1-Pkt', path: [pc1.id, sw1.id], status: 'IN_FLIGHT',
+                        onCollision: () => {
+                            this.log(`[${formatTime(this.simTime)}] ${pc1.name} detected collision on shared channel! Starting backoff...`, 'warning');
+                            setTimeout(() => {
+                                if (this.status === SIM_STATUS.RUNNING) {
+                                    this.log(`[${formatTime(this.simTime)}] ${pc1.name} retransmitting successfully after backoff.`, 'success');
+                                    const p1Retry = this.createPacket({
+                                        type: 'DATA', label: 'PC1-Retry', path: [pc1.id, sw1.id], status: 'RETRANSMIT',
+                                        onArrival: () => this.log(`[${formatTime(this.simTime)}] ${pc1.name} retransmitted packet delivered to ${sw1.name}.`, 'success')
+                                    });
+                                    this.transmitPacket(p1Retry);
+                                }
+                            }, 1400 / this.config.speed);
+                        }
+                    });
+
+                    const p2 = this.createPacket({
+                        type: 'DATA', label: 'PC3-Pkt', path: [pc3.id, sw1.id], status: 'IN_FLIGHT',
+                        onCollision: () => {
+                            this.log(`[${formatTime(this.simTime)}] ${pc3.name} detected collision on shared channel! Starting backoff...`, 'warning');
+                            setTimeout(() => {
+                                if (this.status === SIM_STATUS.RUNNING) {
+                                    this.log(`[${formatTime(this.simTime)}] ${pc3.name} retransmitting successfully after backoff.`, 'success');
+                                    const p2Retry = this.createPacket({
+                                        type: 'DATA', label: 'PC3-Retry', path: [pc3.id, sw1.id], status: 'RETRANSMIT',
+                                        onArrival: () => this.log(`[${formatTime(this.simTime)}] ${pc3.name} retransmitted packet delivered to ${sw1.name}.`, 'success')
+                                    });
+                                    this.transmitPacket(p2Retry);
+                                }
+                            }, 2200 / this.config.speed);
+                        }
+                    });
+
+                    this.transmitPacket(p1);
+                    setTimeout(() => {
+                        if (this.status === SIM_STATUS.RUNNING) this.transmitPacket(p2);
+                    }, 120);
+                }
+
+                executeRoutingDemo() {
+                    this.log(`[${formatTime(this.simTime)}] Sending ICMP Echo Probe along BFS path...`, 'info');
+                    const probe = this.createPacket({
+                        type: 'PROBE', label: 'ECHO', path: [...this.activeRoute.path], status: 'IN_FLIGHT',
+                        onArrival: () => {
+                            this.log(`[${formatTime(this.simTime)}] Probe reached destination! Route verified with ${this.activeRoute.hops} hops.`, 'success');
+                            this.completeSimulation();
+                        }
+                    });
+                    this.transmitPacket(probe);
+                }
+
+                createPacket(props) {
+                    return {
+                        id: generateId('pkt'),
+                        progress: 0.0,
+                        hopIndex: 0,
+                        x: 0,
+                        y: 0,
+                        isPaused: false,
+                        sourceId: props.sourceId || (props.path && props.path.length > 0 ? props.path[0] : null),
+                        ...props
+                    };
+                }
+
+                transmitPacket(pkt) {
+                    this.registerChannelOccupancy(pkt);
+                    this.inFlightPackets.push(pkt);
+                }
+
+                updateTcpState(newState) {
+                    this.stats.tcpState = newState;
+                    this.onTcpStateChange(newState);
+                    this.updateStats();
+                }
+
+                updateStats() {
+                    const total = (this.config.mode === 'tcp_only' ? 3 : this.config.totalPackets) || 1;
+                    const delivered = this.stats.deliveredPackets;
+                    this.stats.deliveryPercentage = `${((delivered / total) * 100).toFixed(1)}%`;
+                    this.onStatsUpdate(this.stats);
+                }
+
+                completeSimulation() {
+                    this.status = SIM_STATUS.COMPLETED;
+                    if (this.config.mode === 'tcp_only') {
+                        this.stats.deliveredPackets = 3;
+                        this.stats.totalPackets = 3;
+                        this.stats.deliveryPercentage = '100.0%';
+                    }
+                    this.updateStats();
+                    this.onStateChange(this.status);
+                    this.log(`═══════════════════════════════════════`, 'success');
+                    this.log(`SIMULATION COMPLETED`, 'success');
+                    if (this.config.mode === 'tcp_only') {
+                        this.log(`• TCP Handshake Control Packets: 3 (SYN, SYN-ACK, ACK)`, 'info');
+                        this.log(`• Successfully Delivered: 3`, 'success');
+                        this.log(`• Delivery Rate: 100.0%`, 'success');
+                        this.log(`• Route Hop Count: ${this.stats.hopCount}`, 'info');
+                        this.log(`• Connection Status: ESTABLISHED`, 'success');
+                    } else {
+                        this.log(`• Total Unique Packets: ${this.config.totalPackets}`, 'info');
+                        this.log(`• Successfully Delivered: ${this.stats.deliveredPackets}`, 'success');
+                        this.log(`• Retransmissions: ${this.stats.retransmissions}`, 'info');
+                        this.log(`• Collisions Encountered: ${this.stats.collisions}`, 'info');
+                        this.log(`• Route Hop Count: ${this.stats.hopCount}`, 'info');
+                        this.log(`• Delivery Rate: ${this.stats.deliveryPercentage}`, 'success');
+                    }
+                    this.log(`• Total Simulated Duration: ${formatTime(this.simTime)}`, 'info');
+                    this.log(`═══════════════════════════════════════`, 'success');
+                }
+
+                log(message, type = 'normal') {
+                    const cleanMessage = message.replace(/^\[\d{2}:\d{2}\.\d\]\s*/, '');
+                    this.onLog({ time: formatTime(this.simTime), message: cleanMessage, type, timestamp: Date.now() });
+                }
+
+                getModeName() {
+                    switch (this.config.mode) {
+                        case 'complete': return 'Complete Simulation';
+                        case 'tcp_only': return 'TCP Handshake Only';
+                        case 'routing_only': return 'Routing Only';
+                        case 'collision_only': return 'Collision Demonstration';
+                        default: return this.config.mode;
+                    }
+                }
+            }
+
+            // Wire up UI
+            const canvas = document.getElementById('network-canvas');
+            const statusBadge = document.getElementById('status-badge');
+            const statusText = document.getElementById('status-text');
+            const btnHeaderReset = document.getElementById('btn-header-reset');
+            const btnStart = document.getElementById('btn-start');
+            const btnPause = document.getElementById('btn-pause');
+            const btnResume = document.getElementById('btn-resume');
+            const btnStep = document.getElementById('btn-step');
+            const btnFindRoute = document.getElementById('btn-find-route');
+            const btnReset = document.getElementById('btn-reset');
+            const btnTraffic = document.getElementById('btn-traffic');
+            const btnAltRoute = document.getElementById('btn-alt-route');
+            const btnAddPc = document.getElementById('btn-add-pc');
+            const btnAddRouter = document.getElementById('btn-add-router');
+            const btnAddSwitch = document.getElementById('btn-add-switch');
+            const btnConnectPtp = document.getElementById('btn-connect-ptp');
+            const btnConnectShared = document.getElementById('btn-connect-shared');
+            const btnDelete = document.getElementById('btn-delete');
+            const btnLoadDefault = document.getElementById('btn-load-default');
+            const selectSource = document.getElementById('select-source');
+            const selectDest = document.getElementById('select-dest');
+            const selectMode = document.getElementById('select-mode');
+            const inputTotalPackets = document.getElementById('input-total-packets');
+            const selectSpeed = document.getElementById('select-speed');
+            const selectLossProb = document.getElementById('select-loss-prob');
+            const selectCollisionProb = document.getElementById('select-collision-prob');
+            const tcpSteps = {
+                [TCP_STATE.CLOSED]: document.getElementById('tcp-closed'),
+                [TCP_STATE.SYN_SENT]: document.getElementById('tcp-syn-sent'),
+                [TCP_STATE.SYN_RECEIVED]: document.getElementById('tcp-syn-recv'),
+                [TCP_STATE.ESTABLISHED]: document.getElementById('tcp-established')
+            };
+            const routeDisplayBadge = document.getElementById('route-display-badge');
+            const statTotalPackets = document.getElementById('stat-total-packets');
+            const statDelivered = document.getElementById('stat-delivered');
+            const statLost = document.getElementById('stat-lost');
+            const statCollisions = document.getElementById('stat-collisions');
+            const statRetransmissions = document.getElementById('stat-retransmissions');
+            const statAcks = document.getElementById('stat-acks');
+            const statHops = document.getElementById('stat-hops');
+            const statTime = document.getElementById('stat-time');
+            const statRate = document.getElementById('stat-rate');
+            const statTcpState = document.getElementById('stat-tcp-state');
+            const eventLogContainer = document.getElementById('event-log-container');
+            const btnClearLog = document.getElementById('btn-clear-log');
+            const inspectorContent = document.getElementById('inspector-content');
+
+            let topology = new Topology(canvas, {
+                onSelectionChanged: (item, type) => renderInspector(item, type),
+                onTopologyChanged: () => { populateDeviceDropdowns(); updateCurrentRouteDisplay(); }
+            });
+
+            let simulation = new Simulation(topology, {
+                onLog: (item) => appendLog(item),
+                onStatsUpdate: (stats) => renderStats(stats),
+                onStateChange: (state) => { updateStatusBadge(state); updateControlButtons(state); },
+                onTcpStateChange: (state) => updateTcpTimeline(state)
+            });
+
+            window.addEventListener('resize', () => topology.resize());
+
+            function updateConfigFromUI() {
+                simulation.updateConfig({
+                    sourceId: selectSource.value, destId: selectDest.value, mode: selectMode.value,
+                    totalPackets: parseInt(inputTotalPackets.value, 10) || 10,
+                    speed: parseFloat(selectSpeed.value) || 1.0,
+                    packetLossProb: parseFloat(selectLossProb.value) || 0.05,
+                    collisionProb: parseFloat(selectCollisionProb.value) || 0.3
+                });
+            }
+
+            function populateDeviceDropdowns() {
+                if (!topology || !topology.nodes) return;
+                const pcNodes = topology.nodes.filter(n => n.type === 'pc');
+                const curSrc = selectSource.value, curDst = selectDest.value;
+                selectSource.innerHTML = ''; selectDest.innerHTML = '';
+                pcNodes.forEach(node => {
+                    const o1 = document.createElement('option'); o1.value = node.id; o1.textContent = `${node.name} (${node.ip})`; selectSource.appendChild(o1);
+                    const o2 = document.createElement('option'); o2.value = node.id; o2.textContent = `${node.name} (${node.ip})`; selectDest.appendChild(o2);
+                });
+                if (curSrc && pcNodes.some(n => n.id === curSrc)) selectSource.value = curSrc;
+                else if (pcNodes.length > 0) selectSource.value = pcNodes[0].id;
+                if (curDst && pcNodes.some(n => n.id === curDst)) selectDest.value = curDst;
+                else if (pcNodes.length > 1) selectDest.value = pcNodes[pcNodes.length - 1].id;
+            }
+
+            function updateCurrentRouteDisplay() {
+                if (!topology || !topology.nodes) return;
+                const srcId = selectSource.value, dstId = selectDest.value;
+                if (!srcId || !dstId) return;
+                const res = topology.findRouteBFS(srcId, dstId);
+                if (res.success) {
+                    topology.setHighlightedRoute(res.path);
+                    routeDisplayBadge.textContent = `Route (${res.hops} hops): ${res.description}`;
+                    statHops.textContent = res.hops;
+                } else {
+                    topology.clearHighlightedRoute();
+                    routeDisplayBadge.textContent = 'No valid route between the selected devices.';
+                    statHops.textContent = '0';
+                }
+            }
+
+            function updateStatusBadge(state) {
+                statusBadge.className = 'status-badge';
+                statusText.textContent = state;
+                if (state === SIM_STATUS.READY) statusBadge.classList.add('ready');
+                else if (state === SIM_STATUS.RUNNING) statusBadge.classList.add('running');
+                else if (state === SIM_STATUS.PAUSED) statusBadge.classList.add('paused');
+                else if (state === SIM_STATUS.COMPLETED) statusBadge.classList.add('completed');
+                else if (state === SIM_STATUS.FAILED) statusBadge.classList.add('failed');
+            }
+
+            function updateControlButtons(state) {
+                if (state === SIM_STATUS.RUNNING) {
+                    btnStart.disabled = true; btnPause.disabled = false; btnResume.disabled = true; btnStep.disabled = true;
+                } else if (state === SIM_STATUS.PAUSED) {
+                    btnStart.disabled = true; btnPause.disabled = true; btnResume.disabled = false; btnStep.disabled = false;
+                } else {
+                    btnStart.disabled = false; btnPause.disabled = true; btnResume.disabled = true; btnStep.disabled = false;
+                }
+            }
+
+            function updateTcpTimeline(state) {
+                Object.values(tcpSteps).forEach(step => step.classList.remove('active', 'completed'));
+                if (state === TCP_STATE.CLOSED) tcpSteps[TCP_STATE.CLOSED].classList.add('active');
+                else if (state === TCP_STATE.SYN_SENT) {
+                    tcpSteps[TCP_STATE.CLOSED].classList.add('completed');
+                    tcpSteps[TCP_STATE.SYN_SENT].classList.add('active');
+                } else if (state === TCP_STATE.SYN_RECEIVED) {
+                    tcpSteps[TCP_STATE.CLOSED].classList.add('completed');
+                    tcpSteps[TCP_STATE.SYN_SENT].classList.add('completed');
+                    tcpSteps[TCP_STATE.SYN_RECEIVED].classList.add('active');
+                } else if (state === TCP_STATE.ESTABLISHED) {
+                    tcpSteps[TCP_STATE.CLOSED].classList.add('completed');
+                    tcpSteps[TCP_STATE.SYN_SENT].classList.add('completed');
+                    tcpSteps[TCP_STATE.SYN_RECEIVED].classList.add('completed');
+                    tcpSteps[TCP_STATE.ESTABLISHED].classList.add('completed');
+                }
+            }
+
+            function renderStats(stats) {
+                statTotalPackets.textContent = stats.totalPackets;
+                statDelivered.textContent = stats.deliveredPackets;
+                statLost.textContent = stats.lostPackets;
+                statCollisions.textContent = stats.collisions;
+                statRetransmissions.textContent = stats.retransmissions;
+                statAcks.textContent = stats.acksReceived;
+                statHops.textContent = stats.hopCount;
+                statTime.textContent = formatTime(stats.simTime);
+                statRate.textContent = stats.deliveryPercentage;
+                statTcpState.textContent = stats.tcpState;
+            }
+
+
+
+            function appendLog(logItem) {
+                const entry = document.createElement('div');
+                entry.className = `log-entry ${logItem.type}`;
+                const timeSpan = document.createElement('span');
+                timeSpan.className = 'log-time';
+                timeSpan.textContent = `[${logItem.time}]`;
+                const msgSpan = document.createElement('span');
+                msgSpan.className = 'log-msg';
+                msgSpan.textContent = logItem.message;
+                entry.appendChild(timeSpan);
+                entry.appendChild(msgSpan);
+                eventLogContainer.appendChild(entry);
+                eventLogContainer.scrollTop = eventLogContainer.scrollHeight;
+            }
+
+            function renderInspector(item, type) {
+                if (!item) {
+                    inspectorContent.innerHTML = '<p style="color: var(--secondary-text); font-style: italic;">Click any node or link on the network canvas to inspect properties.</p>';
+                    return;
+                }
+                if (type === 'node') {
+                    inspectorContent.innerHTML = `
+                        <div class="inspector-row"><span class="inspector-label">Device Name:</span><span class="inspector-value">${item.name}</span></div>
+                        <div class="inspector-row"><span class="inspector-label">Device Type:</span><span class="inspector-value">${item.type.toUpperCase()}</span></div>
+                        <div class="inspector-row"><span class="inspector-label">IP Address:</span><span class="inspector-value">${item.ip}</span></div>
+                        <div class="inspector-row"><span class="inspector-label">MAC Address:</span><span class="inspector-value">${item.mac}</span></div>
+                        <div class="inspector-row"><span class="inspector-label">Coordinates:</span><span class="inspector-value">(${Math.round(item.x)}, ${Math.round(item.y)})</span></div>
+                    `;
+                } else if (type === 'link') {
+                    const n1 = topology.getNodeById(item.from), n2 = topology.getNodeById(item.to);
+                    inspectorContent.innerHTML = `
+                        <div class="inspector-row"><span class="inspector-label">Endpoints:</span><span class="inspector-value">${n1 ? n1.name : '?'} ↔ ${n2 ? n2.name : '?'}</span></div>
+                        <div class="inspector-row"><span class="inspector-label">Link Type:</span><span class="inspector-value" style="color: ${item.isShared ? 'var(--warning-orange)' : 'var(--primary-blue)'}">${item.isShared ? 'Shared Channel (Collision Domain)' : 'Point-to-Point'}</span></div>
+                        <div class="inspector-row"><span class="inspector-label">Bandwidth:</span><span class="inspector-value">${item.bandwidth}</span></div>
+                        <div class="inspector-row"><span class="inspector-label">Propagation Delay:</span><span class="inspector-value">${item.delay}</span></div>
+                        <div style="margin-top: 10px;"><button id="btn-toggle-shared" class="btn btn-secondary btn-sm" style="width: 100%;">${item.isShared ? 'Convert to Point-to-Point' : 'Convert to Shared Medium'}</button></div>
+                    `;
+                    const btnToggle = document.getElementById('btn-toggle-shared');
+                    if (btnToggle) {
+                        btnToggle.addEventListener('click', () => {
+                            item.isShared = !item.isShared;
+                            item.channelName = item.isShared ? 'Shared Channel (Collision Domain)' : `PtP Link ${n1.name}-${n2.name}`;
+                            topology.render();
+                            renderInspector(item, 'link');
+                        });
+                    }
+                }
+            }
+
+            // Buttons wiring
+            btnStart.addEventListener('click', () => {
+                updateConfigFromUI();
+                const val = validateConfig(simulation.config);
+                if (!val.isValid) { alert(val.errors.join('\n')); return; }
+                simulation.start();
+            });
+            btnPause.addEventListener('click', () => simulation.pause());
+            btnResume.addEventListener('click', () => simulation.resume());
+            btnStep.addEventListener('click', () => simulation.step());
+            btnReset.addEventListener('click', () => simulation.reset());
+            btnHeaderReset.addEventListener('click', () => simulation.reset());
+            btnFindRoute.addEventListener('click', () => {
+                updateConfigFromUI();
+                const res = topology.findRouteBFS(simulation.config.sourceId, simulation.config.destId);
+                if (res.success) {
+                    topology.setHighlightedRoute(res.path);
+                    routeDisplayBadge.textContent = `Route (${res.hops} hops): ${res.description}`;
+                    statHops.textContent = res.hops;
+                    simulation.log(`[${formatTime(simulation.simTime)}] BFS Route found (${res.hops} hops): ${res.description}`, 'success');
+                } else {
+                    topology.clearHighlightedRoute();
+                    routeDisplayBadge.textContent = 'No valid route between the selected devices.';
+                    statHops.textContent = '0';
+                    simulation.log(`[${formatTime(simulation.simTime)}] BFS Route discovery failed: ${res.reason}`, 'error');
+                    alert(res.reason);
+                }
+            });
+
+            let altIdx = 0;
+            btnAltRoute.addEventListener('click', () => {
+                updateConfigFromUI();
+                const routes = topology.findAlternativeRoutes(simulation.config.sourceId, simulation.config.destId);
+                if (routes.length > 1) {
+                    altIdx = (altIdx + 1) % routes.length;
+                    const ch = routes[altIdx];
+                    topology.setHighlightedRoute(ch.path);
+                    routeDisplayBadge.textContent = `Route [Alt ${altIdx + 1}/${routes.length}]: ${ch.description}`;
+                    statHops.textContent = ch.hops;
+                    simulation.log(`[${formatTime(simulation.simTime)}] Displaying Alternative BFS Route ${altIdx + 1}: ${ch.description}`, 'info');
+                } else if (routes.length === 1) {
+                    simulation.log(`[${formatTime(simulation.simTime)}] Only one distinct path exists between the selected nodes.`, 'info');
+                } else {
+                    simulation.log(`[${formatTime(simulation.simTime)}] No alternative routes available.`, 'warning');
+                }
+            });
+
+            btnTraffic.addEventListener('click', () => simulation.generateSimultaneousTraffic());
+            btnAddPc.addEventListener('click', () => topology.addNode('pc'));
+            btnAddRouter.addEventListener('click', () => topology.addNode('router'));
+            btnAddSwitch.addEventListener('click', () => topology.addNode('switch'));
+            btnConnectPtp.addEventListener('click', () => topology.startConnectMode(false));
+            btnConnectShared.addEventListener('click', () => topology.startConnectMode(true));
+            btnDelete.addEventListener('click', () => {
+                const deleted = topology.deleteSelected();
+                if (!deleted) alert('Please select a device node or link to delete.');
+            });
+            btnLoadDefault.addEventListener('click', () => {
+                topology.loadDefault();
+                simulation.reset();
+                populateDeviceDropdowns();
+                updateCurrentRouteDisplay();
+            });
+            btnClearLog.addEventListener('click', () => { eventLogContainer.innerHTML = ''; });
+
+            [selectSource, selectDest, selectMode, inputTotalPackets, inputWindowSize, selectSpeed, selectLossProb, selectCollisionProb].forEach(el => {
+                el.addEventListener('change', () => { updateConfigFromUI(); updateCurrentRouteDisplay(); });
+            });
+
+            // Initialize on startup
+            populateDeviceDropdowns();
+            updateConfigFromUI();
+            updateCurrentRouteDisplay();
+            simulation.reset();
+            setTimeout(() => { if (topology) topology.resize(); }, 50);
+        }
+
+        // Auto-check if module ran, otherwise trigger direct fallback
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => setTimeout(runFallbackIfBlocked, 50));
+        } else {
+            setTimeout(runFallbackIfBlocked, 50);
+        }
+    })();
+    </script>
+</body>
+</html>
+

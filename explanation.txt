@@ -1,0 +1,198 @@
+================================================================================
+NETSIM — INTERACTIVE NETWORK COMMUNICATION SIMULATOR
+COMPREHENSIVE PROJECT EXPLANATION & VIVA PRESENTATION GUIDE
+================================================================================
+
+1. PROJECT OVERVIEW
+--------------------------------------------------------------------------------
+NetSim is an interactive, browser-based Computer Networks simulator built using
+pure vanilla web technologies (HTML5 Canvas, CSS3, JavaScript ES modules).
+
+Unlike traditional tools that isolate concepts, NetSim integrates core networking
+fundamentals into a single coherent communication workflow:
+  1. Breadth-First Search (BFS) Routing Path Discovery
+  2. TCP Connection Establishment via the Three-Way Handshake
+  3. Reliable Transport Data Transmission with Positive ACKs & Timeout Recovery
+  4. Shared-Medium Channel Collision Simulation with CSMA/CD Backoff Recovery
+
+The application requires no backend, no database, and no build tools. It runs
+directly in any modern web browser.
+
+
+2. ARCHITECTURE & SYSTEM DESIGN (SIX-FILE MODEL)
+--------------------------------------------------------------------------------
+• index.html:
+  Main user interface containing the simulation controls, configuration panel,
+  HTML5 network canvas, TCP state timeline, live statistics dashboard, and
+  timestamped event log. Fits cleanly on standard 100% display screens.
+
+• style.css:
+  Modern light-themed CSS design system using the specified palette (#F5F7FB, 
+  #2563EB, #16A34A, #F59E0B, #DC2626, #8B5CF6). Optimized layout with responsive
+  grid and smooth canvas styling.
+
+• topology.js:
+  Network topology graph manager and HTML5 Canvas rendering engine. Handles 
+  device node creation (PCs, Switches, Routers), full-duplex and shared-medium
+  link management, interactive drag-and-drop node positioning, and BFS shortest-path 
+  routing calculations.
+
+• simulation.js:
+  Discrete-event simulation engine with decoupled simulation time and render loops.
+  Implements the TCP 3-way handshake, reliable data packet sequencing with positive
+  acknowledgements and timeout recovery, physical link channel occupancy collision 
+  tracking, and random exponential backoff retransmission.
+
+• utils.js:
+  Mathematical and topological helper functions: default network topology graph 
+  coordinates, unique identifier generation, line-to-segment distance formulas,
+  input validators, and simulation clock formatting (mm:ss.s).
+
+• script.js:
+  Application entry point that wires DOM controls and input elements, coordinates
+  events between the Topology and Simulation engines, and updates the live metrics
+  dashboard and event log.
+
+
+3. THE FOUR INTEGRATED NETWORKING CONCEPTS
+--------------------------------------------------------------------------------
+
+A. FEATURE 1: ROUTING PATH VISUALIZATION (BFS)
+   • Network Model: Treated as an unweighted undirected graph G = (V, E) where
+     nodes represent devices and edges represent communication links.
+   • Algorithm: Standard Breadth-First Search (BFS) is executed when selecting
+     a source and destination PC.
+   • Principle: BFS guarantees finding the route that minimizes the total hop 
+     count (number of edges), which is the standard metric for unweighted 
+     packet-switched network routing.
+   • Educational Highlight: Shows the exact route hops (e.g. PC1 → Switch1 → 
+     Router1 → Router2 → PC2, 4 hops) highlighted in purple neon on the canvas.
+     Also provides an "Alt Route" mechanism to discover redundant alternate paths.
+
+B. FEATURE 2: TCP THREE-WAY HANDSHAKE
+   • Objective: Establishes a reliable logical transport layer connection before
+     any application data packets are transmitted.
+   • Handshake Progression:
+     1. Source PC sends SYN (Synchronize) control packet to destination.
+        State: CLOSED → SYN-SENT.
+     2. Destination PC returns SYN-ACK (Synchronize-Acknowledge).
+        State: SYN-RECEIVED.
+     3. Source PC replies with final ACK (Acknowledge).
+        State: ESTABLISHED.
+   • Educational Highlight: Packets physically traverse the discovered BFS path
+     with animated markers, and the status timeline updates in real time.
+
+C. FEATURE 3: RELIABLE DATA TRANSMISSION WITH POSITIVE ACKs & TIMEOUT RETRANSMISSION
+   • Sequential Data Flow: Once connection status reaches ESTABLISHED, the source 
+     station initiates data packet transfer (P1, P2, ... Pn).
+   • Positive Acknowledgements: Upon successful receipt of each packet Pi, the
+     destination immediately transmits ACK i back along the reverse path.
+   • Timeout & Loss Recovery: An active timer monitors outstanding packets.
+     If a packet is lost in transit (simulated via channel loss probability),
+     the timer expires and triggers automatic retransmission of the packet.
+   • Rate Calculation: The dashboard continuously recalculates Delivery Rate
+     as (Delivered Packets / Total Packets) * 100%.
+
+D. FEATURE 4: SHARED-MEDIUM PACKET COLLISION & BACKOFF
+   • Shared Channel vs. Point-to-Point: Point-to-point links represent full-duplex
+     dedicated lines with zero collisions. Shared links (connecting PC1 and PC3
+     to Switch1) represent a shared collision domain (like a hub or coaxial bus).
+   • Collision Detection: The engine tracks packet occupancy per link. If two
+     transmissions overlap on the shared channel simultaneously, a collision 
+     event is triggered.
+   • Visual Representation: The colliding channel flashes red with a "⚡ COLLISION"
+     badge, packet markers burst, and the collision counter increments.
+   • Backoff & Recovery: Transmitting stations back off for a random delay 
+     interval before attempting retransmission, demonstrating the foundational 
+     concept of Ethernet CSMA/CD and wireless CSMA/CA arbitration.
+
+
+4. HOW TO PRESENT THE PROJECT (VIVA DEMO SCRIPT)
+--------------------------------------------------------------------------------
+
+STEP 1: INTRODUCTORY ELEVATOR PITCH (30 SECONDS)
+  "Good morning/afternoon, Examiner. My project is NetSim, an interactive 
+   network communication simulator. Rather than looking at routing, TCP, and 
+   error control as separate textbook topics, NetSim demonstrates all four 
+   fundamental concepts working together in one integrated browser application:
+     1. Graph-based BFS Routing Path Visualization
+     2. TCP Three-Way Handshake Connection Establishment
+     3. Reliable Transport Data Transmission with ACKs & Timeout Retransmission
+     4. Shared-Medium Channel Collision and CSMA/CD Backoff Recovery"
+
+STEP 2: WALK THROUGH THE NETWORK TOPOLOGY
+  • Point to the network canvas:
+    - Left LAN: PC1 and PC3 connected to Switch1 via an amber dashed link 
+      representing a Shared Medium Channel (Collision Domain).
+    - Core WAN: Switch1 connects to Router1, which routes to Router2 across 
+      a point-to-point WAN link.
+    - Right LAN: Router2 delivers traffic to the destination PC2.
+  • Drag any device node with your mouse to show the examiner that the topology
+    canvas is interactive, real-time, and dynamically recalculates geometry.
+
+STEP 3: DEMONSTRATE BFS ROUTING
+  • In the Configuration Panel, select Source: PC1, Destination: PC2.
+  • Click the "Find Route" button.
+  • Explanation to give:
+    "NetSim treats the network as an unweighted graph and runs Breadth-First 
+     Search (BFS). As shown, the optimal path with 4 hops is highlighted in purple:
+     PC1 → Switch1 → Router1 → Router2 → PC2."
+
+STEP 4: DEMONSTRATE THE TCP THREE-WAY HANDSHAKE & DATA TRANSFER
+  • Set Simulation Mode to 'Complete Simulation (Integrated)'.
+  • Click "▶ Start".
+  • Point to the TCP Connection Timeline below the canvas as SYN, SYN-ACK, 
+    and ACK packets travel across the path.
+  • Explanation to give:
+    "Notice that data transmission does not begin immediately. NetSim first 
+     executes the TCP Three-Way Handshake: PC1 sends SYN (SYN-SENT), PC2 returns 
+     SYN-ACK (SYN-RECEIVED), and PC1 sends ACK, transitioning the connection 
+     status to ESTABLISHED.
+     Once established, data packets P1..P10 stream sequentially across the path, 
+     each acknowledged with an individual ACK from PC2."
+  • Click "⏸ Pause" to freeze packet animation mid-air to show the examiner,
+    then click "⏭ Step" to advance by a single discrete simulation time slice, 
+    and "⏵ Resume" to continue.
+
+STEP 5: DEMONSTRATE SHARED-MEDIUM COLLISION & BACKOFF
+  • Click "💥 Generate Simultaneous Traffic".
+  • Explanation to give:
+    "PC1 and PC3 both attempt transmission over Shared Channel 1 at overlapping 
+     intervals. NetSim detects physical channel contention, triggers a collision 
+     (link pulses in red), increments the live collision statistic, and both 
+     devices execute random backoff before successfully retransmitting."
+
+STEP 6: CONCLUDE WITH LIVE METRICS & EVENT LOG
+  • Point to the Live Metrics Dashboard on the right:
+    "Every metric—Total Packets, Delivered Packets, Retransmissions, Collisions, 
+     Hop Count, and Delivery Rate—is tracked live from the protocol state machine."
+  • Conclude by pointing to the timestamped Event Log:
+    "Every packet departure, ACK arrival, timeout, and collision is logged with 
+     precise timestamps ([mm:ss.s]) for post-transmission analysis."
+
+
+5. VIVA VOCE CHEAT SHEET (TOP QUESTIONS & ANSWERS)
+--------------------------------------------------------------------------------
+
+Q1: Why did you use BFS instead of Dijkstra's Algorithm for routing?
+A1: BFS computes the optimal shortest path on unweighted graphs where every hop 
+    has an equal cost (hop count minimization). Dijkstra's algorithm is used when 
+    links have non-uniform weights such as latency, financial cost, or bandwidth.
+
+Q2: What is the purpose of Positive Acknowledgements (ACKs) and Timers?
+A2: Positive ACKs confirm that the receiver received a specific packet intact. 
+    The sender maintains a retransmission timer; if an ACK is not received before 
+    the timer expires (due to packet loss or channel drop), the sender automatically 
+    retransmits the unacknowledged packet, guaranteeing reliability.
+
+Q3: How does NetSim differ between Point-to-Point and Shared links?
+A3: Point-to-point links represent dedicated full-duplex channels where opposing 
+    transmissions never interfere. Shared links model a shared collision domain 
+    (like classic CSMA/CD Ethernet). If two packets traverse the shared link at 
+    overlapping intervals, a collision is registered, requiring backoff and retry.
+
+Q4: What happens if a TCP SYN packet fails to establish a connection?
+A4: In TCP, if no route exists or if the destination does not return SYN-ACK within 
+    the timeout window, the connection cannot be established, and data transfer is 
+    aborted to prevent packet loss.
+================================================================================
